@@ -115,13 +115,19 @@ def main():
             # 1) Period anomaly (Replay)
             # -----------------------------
             if cid in last_seen and b.get("dt_mean") is not None:
+                dt_mean = float(b["dt_mean"])
+                dt_std = float(b["dt_std"])
                 dt = now - last_seen[cid]
-                z = abs(dt - float(b["dt_mean"])) / float(b["dt_std"])
+                z = abs(dt - dt_mean) / dt_std
 
-                if z > Z_DT and (now - last_alert[(cid, "dt")]) > COOLDOWN_PERIOD:
+                # 정상 대비 메시지 빈도 증가 배수
+                freq_increase = dt_mean / dt if dt > 0 else 0.0
+
+                # 정상보다 더 빠르게 들어오는 경우만 경고
+                if dt < dt_mean and z > Z_DT and (now - last_alert[(cid, "dt")]) > COOLDOWN_PERIOD:
                     print(
                         f"[ALERT][PERIOD] ID={cid} dt={dt:.4f}s "
-                        f"(mean={float(b['dt_mean']):.4f}, z={z:.2f})"
+                        f"(mean={dt_mean:.4f}, z={z:.2f}, freq_increase≈{freq_increase:.2f}x)"
                     )
                     last_alert[(cid, "dt")] = now
 
